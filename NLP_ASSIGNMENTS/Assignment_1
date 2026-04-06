@@ -1,0 +1,133 @@
+# Assignment 1: NLP Preprocessing Engine
+
+import re
+import string
+from collections import Counter
+import numpy as np
+
+""" 
+Conceptual Answers
+
+q) Difference between "Love" and "love":
+NLP treats them as different tokens because it is case-sensitive.
+This can lead to duplicate features, so we usually convert everything to lowercase.
+
+q) What happens if stopwords are not removed:
+Stopwords like "is", "the", "and" increase noise and data size.
+Models may focus on unimportant words, reducing performance.
+
+q) When removing stopwords is harmful:
+1. Sentiment analysis: "not good" becomes "good" → wrong meaning
+2. Question systems: words like "who", "what" are important
+
+q) Stemming vs Lemmatization:
+Stemming cuts words roughly (running → run)
+Lemmatization uses dictionary meaning (better → good)
+
+"""
+
+def preprocess_text(text):
+    if not text or not isinstance(text, str):
+        return []
+
+    # Remove URLs and emails
+    text = re.sub(r"http\S+|www\S+|https\S+", "", text)
+    text = re.sub(r"\S+@\S+", "", text)
+
+    # Remove numbers
+    text = re.sub(r"\d+", "", text)
+
+    # Convert to lowercase
+    text = text.lower()
+
+    # Remove repeated characters
+    text = re.sub(r'(.)\1+', r'\1', text)
+
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    # Remove extra spaces
+    text = re.sub(r"\s+", " ", text).strip()
+
+    tokens = text.split()
+
+    # Remove small words except important ones
+    tokens = [w for w in tokens if len(w) > 2 or w in ['no', 'not']]
+
+    return tokens
+
+
+test_sentences = [
+    "Get 100% FREE access now!!!",
+    "I absolutely looooved this product 😍😍",
+    "Worst service ever... 0/10",
+    "Call me at 9876543210",
+    "This is THE best course!!!",
+    "Visit https://openai.com now!",
+    "Nooooo this is baaad!!!",
+    "OK OK OK I got it",
+    "Win $$$ now!!! Limited offer!!!",
+    "I am not happy with this"
+]
+
+all_tokens = []
+
+print("Stress Test Results\n")
+
+for s in test_sentences:
+    tokens = preprocess_text(s)
+    clean = " ".join(tokens)
+    all_tokens.extend(tokens)
+
+    print("Original:", s)
+    print("Tokens:", tokens)
+    print("Cleaned:", clean)
+    print()
+
+
+print("Token Analytics\n")
+
+for s in test_sentences:
+    tokens = preprocess_text(s)
+
+    if len(tokens) == 0:
+        continue
+
+    print("Sentence:", s)
+    print("Total:", len(tokens))
+    print("Unique:", len(set(tokens)))
+    print("Avg Length:", np.mean([len(t) for t in tokens]))
+    print()
+
+
+counter = Counter(all_tokens)
+
+print("Top 10 Frequent Words:", counter.most_common(10))
+print("Top 5 Least Frequent Words:", counter.most_common()[-5:])
+
+
+def full_pipeline(text_list):
+    tokens_all = []
+    clean_sentences = []
+
+    for text in text_list:
+        tokens = preprocess_text(text)
+        tokens_all.extend(tokens)
+        clean_sentences.append(" ".join(tokens))
+
+    return {
+        "tokens": tokens_all,
+        "clean_sentences": clean_sentences
+    }
+
+
+print("Pipeline Output:", full_pipeline(test_sentences))
+
+
+print("Error Handling\n")
+edge_cases = ["", "😂😂😂😂", "123456"]
+
+for case in edge_cases:
+    print("Input:", case)
+    print("Output:", preprocess_text(case))
+    print()
